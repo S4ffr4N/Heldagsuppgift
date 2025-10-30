@@ -22,7 +22,7 @@ static int http_client_send_all(tcp_client *client, const unsigned char *data, i
     return sent;
 }
 
-/* convert unsigned long to ascii (C89) */
+/* convert unsigned long to ascii */
 static int write_uint_to_buffer(char *buf, unsigned long value)
 {
     char temp[32];
@@ -77,42 +77,34 @@ int http_client_post(
     if (write_uint_to_buffer(content_len_buf, body_len) < 0)
         return -1;
 
-    /* build request manually */
-    /* POST <path> HTTP/1.1\r\n */
-    strcpy(request + pos, "POST ");
-    pos += 5;
-    strcpy(request + pos, path);
-    pos += (int)strlen(path);
-    strcpy(request + pos, " HTTP/1.1\r\n");
-    pos += 11;
+    /* build request */
+    {
+        const char *s;
 
-    /* Host: <host>\r\n */
-    strcpy(request + pos, "Host: ");
-    pos += 6;
-    strcpy(request + pos, host);
-    pos += (int)strlen(host);
-    strcpy(request + pos, "\r\n");
-    pos += 2;
+        /* Request line */
+        s = "POST ";                  strcpy(request + pos, s); pos += (int)strlen(s);
+        s = path;                     strcpy(request + pos, s); pos += (int)strlen(s);
+        s = " HTTP/1.1\r\n";          strcpy(request + pos, s); pos += (int)strlen(s);
 
-    /* Content-Type */
-    strcpy(request + pos, "Content-Type: application/json\r\n");
-    pos += 33;
+        /* Host header */
+        s = "Host: ";                 strcpy(request + pos, s); pos += (int)strlen(s);
+        s = host;                     strcpy(request + pos, s); pos += (int)strlen(s);
+        s = "\r\n";                   strcpy(request + pos, s); pos += (int)strlen(s);
 
-    /* Content-Length: X\r\n */
-    strcpy(request + pos, "Content-Length: ");
-    pos += 16;
-    strcpy(request + pos, content_len_buf);
-    pos += (int)strlen(content_len_buf);
-    strcpy(request + pos, "\r\n");
-    pos += 2;
+        /* Content-Type */
+        s = "Content-Type: application/json\r\n";
+                                     strcpy(request + pos, s); pos += (int)strlen(s);
 
-    /* Connection close */
-    strcpy(request + pos, "Connection: close\r\n");
-    pos += 19;
+        /* Content-Length */
+        s = "Content-Length: ";       strcpy(request + pos, s); pos += (int)strlen(s);
+        s = content_len_buf;          strcpy(request + pos, s); pos += (int)strlen(s);
+        s = "\r\n";                   strcpy(request + pos, s); pos += (int)strlen(s);
 
-    /* blank line \r\n */
-    strcpy(request + pos, "\r\n");
-    pos += 2;
+        /* Connection: close + blank line */
+        s = "Connection: close\r\n";  strcpy(request + pos, s); pos += (int)strlen(s);
+        s = "\r\n";                   strcpy(request + pos, s); pos += (int)strlen(s);
+    }
+    /* =========================================================== */
 
     /* send headers */
     if (http_client_send_all(client, (unsigned char*)request, pos) < 0)
@@ -126,8 +118,10 @@ int http_client_post(
     }
 
     /* notify via callback */
-    if (handler)
-        handler("[client] POST sent", 19);
+    if (handler) {
+        const char *msg = "[client] POST sent";
+        handler(msg, (unsigned long)strlen(msg));
+    }
 
     return 0;
 }
@@ -167,7 +161,7 @@ int http_client_read_all(
 
         if (used + (unsigned long)n + 1 > cap)
         {
-            unsigned long newcap = cap == 0 ? 4096 : cap * 2;
+            unsigned long newcap = (cap == 0) ? 4096 : cap * 2;
             while (newcap < used + (unsigned long)n + 1)
                 newcap *= 2;
 
