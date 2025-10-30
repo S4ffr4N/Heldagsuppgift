@@ -25,11 +25,14 @@ static char* find_http_body(char *response)
 
 int main(void)
 {
-    /* declarations */
+    /* Declarations */
+    
+    /* Fixed test server for demo purpose */
     const char *host = "httpbin.org";
     unsigned short port = 80;
     const char *path = "/post";
 
+    /* Hardcoded values for demo purpose */
     char json_body[256];
     const char *device = "NODE001";
     const char *time_str = "2025-10-30T21:00:00Z";
@@ -39,7 +42,7 @@ int main(void)
     char *resp = 0;
     unsigned long resp_len = 0;
     char *body;
-    
+
 
     /* build JSON body */
     json_body[0] = '\0';
